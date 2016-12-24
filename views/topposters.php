@@ -13,7 +13,6 @@
 <?= $this->Form->button('GO!') ?>
 </p>
 <?= $this->Form->close() ?>
-<?= hoverHelp('string', 'help') ?>
 
 <ul class="DataList TopPosters">
     <li class="Item Title">
