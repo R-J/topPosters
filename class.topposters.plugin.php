@@ -6,7 +6,7 @@ $PluginInfo['topPosters'] = [
     'Version' => '0.1',
     'HasLocale' => true,
     'Author' => 'Robin Jurinka',
-    'AuthorUrl' => 'http://vanillaforums.org/profile/r_j',
+    'AuthorUrl' => 'https://open.vanillaforums.com/profile/R_J',
     'RequiredApplications' => ['Vanilla' => '>=2.3'],
     'RegisterPermissions' => ['Plugins.TopPosters.View'],
     'SettingsPermission' => [
@@ -20,10 +20,31 @@ $PluginInfo['topPosters'] = [
 ];
 
 class TopPostersPlugin extends Gdn_Plugin {
+
+    public function setup() {
+        // Create custom route.
+        $newRoute = '^topposters(/.*)?$';
+        if (!Gdn::router()->matchRoute($newRoute)) {
+            Gdn::router()->setRoute($newRoute, 'vanilla/topposters$1', 'Internal');
+        }
+    }
+
+    /**
+     * Clean up when plugin is disabled.
+     *
+     * @return void.
+     */
+    public function onDisable() {
+        Gdn::router()->deleteRoute('^topposters(/.*)?$');
+    }
+
     public function base_render_before($sender) {
-        $sender->permission('Plugins.TopPosters.View');
+        if (!checkPermission('Plugins.TopPosters.View')) {
+            return;
+        }
+        // $sender->permission('Plugins.TopPosters.View');
         if ($sender->MasterView == 'default' || $sender->MasterView == '') {
-            $sender->Menu->addLink('TopPosters', t('Top Posters'), 'vanilla/topposters');
+            $sender->Menu->addLink('TopPosters', t('Top Posters'), 'topposters');
         }
     }
 
@@ -43,7 +64,7 @@ class TopPostersPlugin extends Gdn_Plugin {
         $page = pageNumber($offset, $limit);
 
         // Set canonical URL.
-        $sender->canonicalUrl(url(concatSep('/', ['vanilla', 'topposters', $filter], pageNumber($offset, $limit, true, false)), true));
+        $sender->canonicalUrl(url(concatSep('/', ['topposters', $filter], pageNumber($offset, $limit, true, false)), true));
 
         // Setup head.
         $sender->setData('Title', t('Top Posters'));
@@ -59,7 +80,7 @@ class TopPostersPlugin extends Gdn_Plugin {
         );
         // Redirect based on filter
         if ($sender->Form->isPostBack() && $sender->Form->getValue('GO!') != '') {
-            redirect(url('/vanilla/topposters/'.$sender->Form->getValue('Filter')));
+            redirect(url('/topposters/'.$sender->Form->getValue('Filter')));
         }
 
         // Add modules
@@ -67,7 +88,7 @@ class TopPostersPlugin extends Gdn_Plugin {
         $sender->addModule('NewDiscussionModule');
         $sender->addModule('CategoriesModule');
         $sender->addModule('BookmarkedModule');
-        $sender->setData('Breadcrumbs', [['Name' => t('Top Posters'), 'Url' => '/vanilla/topposters']]);
+        $sender->setData('Breadcrumbs', [['Name' => t('Top Posters'), 'Url' => '/topposters']]);
 
         $topPosters = Gdn::cache()->get($filter.'TopPosters');
         if ($topPosters == Gdn_Cache::CACHEOP_FAILURE) {
