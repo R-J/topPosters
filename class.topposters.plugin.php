@@ -42,7 +42,6 @@ class TopPostersPlugin extends Gdn_Plugin {
         if (!checkPermission('Plugins.TopPosters.View')) {
             return;
         }
-        // $sender->permission('Plugins.TopPosters.View');
         if ($sender->MasterView == 'default' || $sender->MasterView == '') {
             $sender->Menu->addLink('TopPosters', t('Top Posters'), 'topposters');
         }
@@ -95,15 +94,27 @@ class TopPostersPlugin extends Gdn_Plugin {
             $wheres = '';
             switch ($filter) {
                 case 'currentweek':
-                    $wheres = "WHERE DateInserted >= '".date('Y-m-d 00:00:00', strtotime('-1 week'))."'";
+                    $wheres = "WHERE DateInserted >= '".date('Y-m-d 00:00:00', strtotime('-1 week'))."'\r\n";
                     break;
                 case 'previousweek':
                     $wheres = 'WHERE DateInserted < ';
                     $wheres .= "'".date('Y-m-d 00:00:00', strtotime('-1 week'))."'\r\n";
-                    $wheres .= '    AND DateInserted >= ';
+                    $wheres .= '  AND DateInserted >= ';
                     $wheres .= "'".date('Y-m-d 00:00:00', strtotime('-2 week'))."'\r\n";
                     break;
                 default:
+            }
+
+            if (c('topPosters.UserIDsToExclude', false)) {
+                // Never trust user input, so sanitize.
+                $userIDs = explode(',', c('topPosters.UserIDsToExclude', false));
+                $userIDs = array_map('intval', $userIDs);
+                if ($wheres == '') {
+                    $wheres = 'WHERE ';
+                } else {
+                    $wheres .= '  AND ';
+                }
+                $wheres .= 'InsertUserID NOT IN ('.implode(',', $userIDs).")\r\n";
             }
 
             $px = Gdn::structure()->databasePrefix();
